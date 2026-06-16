@@ -1,0 +1,33 @@
+name: prperf
+
+# Benchmark: how long does `ligarb build` take to generate this manual?
+# The build runs under rperf and the profile is uploaded to prperf, which
+# compares the PR against the base (main) and reports on a GitHub Check Run
+# (plus a sticky PR comment if a threshold is exceeded). It never fails CI.
+#
+#   push to main      -> records the comparison BASE
+#   pull_request      -> records the PR and posts the base-vs-PR comparison
+#   workflow_dispatch -> manual trigger (handy to seed the base after install)
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required: prperf uploads authenticate via the OIDC token
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"   # rperf requires Ruby >= 3.4.0
+      - name: Install ligarb + rperf
+        run: gem install ligarb rperf
+      - uses: rperf-dev/prperf-action@v1
+        with:
+          benchmark: book
+          run: rperf record --snapshot-dir "$PRPERF_DIR" -- ligarb build
