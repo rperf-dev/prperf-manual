@@ -1,0 +1,13 @@
+title: "prperf マニュアル"
+language: "ja"
+inherit: book.yml
+description: "PR ごとに性能回帰をチェックする GitHub App「prperf」の導入と結果の読み方。"
+chapters:
+  - cover: ja/cover.md
+  - ja/00-about.md
+  - ja/01-setup.md
+  - ja/benchmark.md
+  - ja/rails.md
+  - ja/other.md
+  - ja/02-reading.md
+  - ja/03-flamegraph.md

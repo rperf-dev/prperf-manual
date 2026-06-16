@@ -1,0 +1,11 @@
+# ligarb hub config — builds the prperf manual in Japanese and English with a
+# language switcher.  Build:  ligarb build book.yml
+author: "Koichi Sasada (ko1)"
+repository: "https://github.com/rperf-dev/prperf-manual"
+site_url: "https://rperf-dev.github.io/prperf-manual/"
+translations:
+  ja: book.ja.yml
+  en: book.en.yml
+
+github_review:
+  enabled: true

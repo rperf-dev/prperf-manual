@@ -1,0 +1,13 @@
+title: "prperf Manual"
+language: "en"
+inherit: book.yml
+description: "Setting up the prperf GitHub App for per-PR performance regression checks, and how to read the results."
+chapters:
+  - cover: en/cover.md
+  - en/00-about.md
+  - en/01-setup.md
+  - en/benchmark.md
+  - en/rails.md
+  - en/other.md
+  - en/02-reading.md
+  - en/03-flamegraph.md
