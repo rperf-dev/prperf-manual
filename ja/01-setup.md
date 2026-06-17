@@ -181,7 +181,7 @@ jobs:
 | `benchmark` | `default` | ベンチ系列名。1 コミットで複数ベンチを独立比較できる |
 | `thresholds` | `""` | このベンチの閾値(全体設定をキー単位で上書き) |
 | `comment` | `on_threshold` | コメントの出し方 |
-| `server` | `https://rperf.atdot.net` | prperf サーバー(差し替え可) |
+| `server` | `https://prperf.atdot.net` | prperf サーバー(差し替え可) |
 | `upload` | `true` | `false` で計測のみ(アップロードしない) |
 
 ## 7. 複数ベンチマーク

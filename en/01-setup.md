@@ -189,7 +189,7 @@ notifications stay at one.
 | `benchmark` | `default` | Benchmark series name; one commit can carry several, compared independently |
 | `thresholds` | `""` | Thresholds for this benchmark (overrides the global defaults per key) |
 | `comment` | `on_threshold` | Comment behavior |
-| `server` | `https://rperf.atdot.net` | prperf server (replaceable) |
+| `server` | `https://prperf.atdot.net` | prperf server (replaceable) |
 | `upload` | `true` | Set `false` to measure without uploading |
 
 ## 7. Multiple benchmarks
