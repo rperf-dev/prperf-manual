@@ -115,7 +115,8 @@ the same state.
 ## Per-project examples
 
 Use the workflow from "Setup" as is, and just point `run:` at each
-`bench/*.rb`. Only benchmarks that hit a DB add a seed to the preparation.
+`bench/*.rb`. Only benchmarks that need preparation (generating fixtures,
+seeding a DB, building assets) add a `prepare_run:`.
 
 ### gem / library
 
@@ -180,8 +181,9 @@ so loop over it, or use the in-process loop above.
 
 ### Rails apps
 
-Rails has its own chapter. For boot, endpoints, typical queries, and jobs, see
-the "Rails quickstart." Roda and grape are Rack apps, so measure them as in
+Rails is covered in the next chapter, the "Rails quickstart" — boot, endpoints,
+typical queries, and jobs are all there. Roda and grape are Rack apps, so measure
+them as in
 "Sinatra / Rack"; Hanami follows the same idea as Rails.
 
 ## Anti-patterns

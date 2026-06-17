@@ -43,7 +43,8 @@ alloc/GC compared on every PR**.
 
 ## Measure one request (the full version)
 
-This measures the real cost of one request. Paste three files.
+This measures the allocations and GC along an endpoint's request-handling path.
+Paste three files.
 
 ### A measurement environment `config/environments/benchmark.rb`
 

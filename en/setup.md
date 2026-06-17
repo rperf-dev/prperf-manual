@@ -27,8 +27,13 @@ prperf write the Check Run and PR comments for that repository.
 
 What you measure determines the range of regressions you can catch. A good
 benchmark is deterministic, runs the path you care about, and does enough work
-to be stable. On a Rails project, measuring boot is an easy first benchmark to
-try. The full how-to and per-project examples are in "Writing a benchmark."
+to be stable. What and how to measure depends on your project, so the how-to and
+per-project examples are in "Writing a benchmark."
+
+For this guide we measure one concrete example: a Rails app's boot. The
+benchmark is just `bin/rails runner ""` — it boots the app and runs an empty
+script, so there's no benchmark file to write. The next section wraps it in
+rperf and puts it in the workflow.
 
 ## Add the workflow
 
@@ -62,11 +67,12 @@ jobs:
           bundler-cache: true
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
+          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
 ```
 
-`run:` must make rperf write at least one profile. Point its output at the
-action-provided `$PRPERF_DIR` with `--snapshot-dir "$PRPERF_DIR"`.
+In `run:`, wrap the command you want to measure in `rperf record`; it must write
+at least one profile. Point its output at the action-provided `$PRPERF_DIR` with
+`--snapshot-dir "$PRPERF_DIR"`.
 
 You **must** include `permissions: id-token: write`. Without it there is no
 OIDC token and the upload cannot happen. `contents: read` lets
@@ -75,10 +81,13 @@ you don't list defaults to none, so both are spelled out.
 
 ## Thresholds and comments (optional)
 
-A threshold caps how much a metric (allocations, GC, time, etc.) may increase
-from base to head; crossing it adds a ⚠️ and, per `comment`, a PR comment.
-Thresholds are **optional**: without them the Check Run still shows numbers, but
-no ⚠️ and no comment. Add them only when you want to be warned on a regression.
+A threshold is what gives you a ⚠️ on the Check Run when something regresses, and
+where you draw the line — how much of an increase counts — is yours to set, per
+metric. Concretely, it caps how much a metric (allocations, GC, time, etc.) may
+increase from base to head; crossing it adds the ⚠️ and, per `comment`, a PR
+comment. Thresholds are **optional**: without them the Check Run still shows
+numbers, but no ⚠️ and no comment. Add them only when you want to be warned on a
+regression.
 
 All configuration lives **in the workflow** — there is no separate config file.
 Write the **global defaults** once in the job's `env`, and **override per
@@ -99,18 +108,19 @@ jobs:
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
+          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
 ```
 
-Threshold keys:
+Threshold keys, with a recommended starting value for each (prperf has no
+built-in threshold — they take effect only once you set them):
 
-| Key | Example | Meaning |
+| Key | Recommended default | Meaning |
 |---|---|---|
-| `alloc` | `"+10%"` / `"+5000"` | Allocation increase (relative / absolute) |
+| `alloc` | `"+10%"` | Allocation increase. Can also be absolute, e.g. `"+5000"` |
 | `gc_count` | `"+2"` | GC count (minor+major) increase |
-| `total_ms` | `"+20%"` | Wall time (noisy; prefer relative) |
-| `cpu_ms` | `"+15%"` | CPU time |
-| `method` | `{ "JSON.generate": "15%" }` | Method self-time share exceeding an absolute value |
+| `total_ms` | `"+20%"` | Wall-time increase. Noisy, so use relative (%) |
+| `cpu_ms` | `"+15%"` | CPU-time increase |
+| `method` | (none) | When a named method's self-time share exceeds the given %. E.g. `{ "JSON.generate": "15%" }` |
 
 - Summary values are `"+N%"` (relative) or `"+N"` (absolute); method values are
   `"N%"`.
