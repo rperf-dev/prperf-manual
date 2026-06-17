@@ -1,19 +1,24 @@
 # Rails クイックスタート
 
-「何を測るか」で悩む前に、**ほぼコピペで動く** Rails 向けの出発点を 2 段階で
-示します。まず ① で「数字が出る」体験を 30 秒で作り、必要なら ② に進んでください。
+「何を測るか」で悩む前に、ほぼコピペで動く Rails 向けの出発点を 2 段階で示します。
+
+まず ① で「数字が出る」体験を 30 秒で作り、必要なら ② に進んでください。
 
 ## ① まず boot を測る(ファイル追加ゼロ)
 
-`bin/rails runner ""` は **アプリを起動して何もせず終わる**ので、起動そのものを
-計測できます。gem 追加や initializer の重さ、autoload 構成の変化を捕まえられ、
-**決定的**で、追加ファイルも DB も要りません。
+`bin/rails runner ""` はアプリを起動して何もせず終わるので、起動そのものを計測できます。
 
-`.github/workflows/prperf.yml`(PR 用)をそのまま貼ってください:
+gem 追加や initializer の重さ、autoload 構成の変化を捕まえられます。
+結果は決定的で、追加ファイルも DB も要りません。
+
+`.github/workflows/prperf.yml` をそのまま貼ってください。
 
 ```yaml
 name: prperf
-on: pull_request
+on:
+  push:
+    branches: [main, master]   # base を記録(既定ブランチ)
+  pull_request:                # PR を base と比較
 
 jobs:
   bench:
@@ -21,9 +26,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      PRPERF_DEFAULT_THRESHOLDS: |
-        alloc: "+10%"
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -35,15 +37,15 @@ jobs:
           run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
 ```
 
-base 用に、同じ steps を `on: push` / `branches: [main]` にした
-`.github/workflows/prperf-base.yml` も置きます(登録編参照)。これだけで
-**boot の alloc/GC が PR ごとに比較**されます。
+この 1 本で、既定ブランチ(main または master)への push が記録した boot の base と、PR の head が比較されます。
 
 > rperf 0.10 以上を Gemfile に入れておいてください。
 
 ## ② 1 リクエストを測る(本格版)
 
-実アプリの「1 リクエストの重さ」を測ります。3 ファイルを貼るだけです。
+実アプリの「1 リクエストの重さ」を測ります。
+
+3 ファイルを貼るだけです。
 
 ### (a) 計測用の環境 `config/environments/benchmark.rb`
 
@@ -64,6 +66,10 @@ end
 ```
 
 ### (b) ベンチ本体 `bench/request.rb`
+
+アプリを起動し、固定のエンドポイントへのリクエストを Rack 経由で N 回通すスクリプトです。
+レスポンスの body まで消費して、レンダリングまで含めて測ります。
+最初の数回はウォームアップとして、autoload やテンプレートのコンパイルを計測から外します。
 
 ```ruby
 # bench/request.rb — フルスタックを通る 1 リクエストを N 回
@@ -91,7 +97,10 @@ end
 
 ```yaml
 name: prperf
-on: pull_request
+on:
+  push:
+    branches: [main, master]   # base を記録(既定ブランチ)
+  pull_request:                # PR を base と比較
 
 jobs:
   bench:
@@ -113,8 +122,6 @@ jobs:
       RAILS_ENV: benchmark
       SECRET_KEY_BASE: dummy-for-benchmark
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_benchmark
-      PRPERF_DEFAULT_THRESHOLDS: |
-        alloc: "+10%"
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -131,24 +138,21 @@ jobs:
           run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
 ```
 
-base 用も同じ steps で `on: push` 版を作ります。
+この場合も、既定ブランチへの push が base を記録し、PR の head が比較されます。
+boot も残すと、起動の回帰とリクエストの回帰を同じ Check Run で別系列として見られます。
 
 ## 変えるのはここだけ
 
-- **`PATH`**(`bench/request.rb`)— 測りたいエンドポイント。**JSON/API
-  エンドポイントが楽**(アセットのプリコンパイル不要、認証で弾かれにくい)。
-- **`db:seed`** — リクエストが DB を引くなら、固定の seed データを用意。
-  引かないなら postgres service と db 行ごと削除。
-- **回数(1,000)** — 全体が数百 ms〜数秒になるよう調整。
+- **`PATH`**(`bench/request.rb`)。測りたいエンドポイントです。JSON/API エンドポイントが楽です(アセットのプリコンパイル不要、認証で弾かれにくい)。
+- **`db:seed`**。リクエストが DB を引くなら、固定の seed データを用意します。引かないなら postgres service と db 行ごと削除します。
+- **回数(1,000)**。全体が数百 ms から数秒になるよう調整します。
+
+まず `PATH` と seed を固定し、それでもブレる場合に回数や対象経路を見直します。
 
 ## うまくいかないとき
 
-- **空の結果/リダイレクトばかり** — `force_ssl` で 301、または認証で弾かれて
-  いる。`benchmark` 環境で `force_ssl=false` 済み。認証が要る経路なら、公開
-  エンドポイントを選ぶか、`bench/request.rb` でログイン済み env を組む。
-- **アセット関連のエラー** — ビュー内の asset ヘルパーが原因。**API/JSON
-  エンドポイント**を選ぶのが手っ取り早い。
-- **数字が毎回ブレる** — seed が固定か、リクエストに時刻/乱数が混ざっていないか
-  を確認(「ベンチマークの書き方」のチェックリスト)。ローカルで
-  `RAILS_ENV=benchmark bundle exec rperf stat -- ruby bench/request.rb` を 2 回
-  流して alloc/GC が一致するか見てください。
+- **空の結果やリダイレクトばかり**。`force_ssl` で 301、または認証で弾かれています。`benchmark` 環境では `force_ssl=false` 済みです。認証が要る経路なら、公開エンドポイントを選ぶか、`bench/request.rb` でログイン済み env を組んでください。
+- **アセット関連のエラー**。ビュー内の asset ヘルパーが原因です。API/JSON エンドポイントを選ぶと、asset ヘルパーの影響を避けやすくなります。
+- **数字が毎回ブレる**。seed が固定か、リクエストに時刻や乱数が混ざっていないかを確認してください(「ベンチマークの書き方」のチェックリスト)。ローカルで `RAILS_ENV=benchmark bundle exec rperf stat -- ruby bench/request.rb` を 2 回流して alloc/GC が一致するか見てください。
+
+いずれも、結果が決定的になるよう入力を固定してから、計測の対象や回数を調整するのが近道です。

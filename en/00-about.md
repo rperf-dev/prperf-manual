@@ -81,16 +81,21 @@ prperf server
 
 ## Who it's for
 
-- **Authors of public gems / libraries** — free. OSS that wants to stop
-  performance regressions at the PR.
-- **Teams with private apps that care about performance** — e.g. Rails apps
-  where performance drives UX or revenue (paid plans; currently public-only
-  during the free beta).
+prperf suits authors of public gems and libraries who want to stop performance
+regressions at the PR. A dependency bump or a refactor can quietly add
+allocations or slow the boot; prperf catches it before the PR merges.
+
+It also suits teams whose private apps care about performance — Rails apps where
+speed drives UX or revenue. You catch a heavy change in the same place you review
+it, before it reaches production.
+
+Pricing: public repositories are free, private repositories are on a paid plan
+(currently public-only during the free beta).
 
 ## How to read this manual
 
 - **Setup** — installing and adding the workflows
-- **Writing a benchmark** / **the quickstarts (Rails and others)** — what to
+- **Writing a benchmark** / **the Rails quickstart** — what to
   measure
 - **Reading the results** / **Reading a flamegraph** — interpreting the output
 

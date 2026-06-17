@@ -13,7 +13,8 @@ script** (e.g. `bench/main.rb`) wrapped in `rperf record`:
 run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
 ```
 
-The action runs it `count` (default 3) times and the server compares the median
+Put rperf in your Gemfile (0.10 or newer) so `bundle exec rperf` resolves. The
+action runs it `count` (default 3) times and the server compares the median
 against base. What you write is the body of `bench/main.rb` — **a script that
 does a representative chunk of work**.
 
@@ -90,31 +91,128 @@ bundle exec rperf record -o out.json.gz -- ruby bench/main.rb
 bundle exec rperf report out.json.gz       # opens the viewer
 ```
 
-## What to measure (examples by project type)
+## Preparation (optional)
 
-### A gem / library
+If the benchmark needs a one-time setup before it runs — generating fixtures,
+seeding a DB, building assets — put it in `prepare_run:`. It runs once before
+the measurement runs and is not measured.
 
-Call the public API on representative fixed input N times.
-
-```ruby
-require "your_lib"
-doc = File.read("bench/fixtures/sample.xml")   # commit a fixed fixture
-2_000.times { YourLib.parse(doc) }
+```yaml
+- uses: rperf-dev/prperf-action@v1
+  with:
+    prepare_run: bin/rails db:prepare db:seed   # once, before measuring
+    run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
 ```
 
-### A Rails app
+A failure here fails the step. Use a fixed seed or input so each run starts from
+the same state.
 
-- **Boot** — the zero-config starting point. Just measuring `bin/rails runner ""`
-  catches boot slowdowns from eager loading or added gems (see Setup).
-- **One request** — boot the test environment and send a fixed request through
-  `Rack`; hit the same endpoint N times against fixed seed data.
-- **A typical query / service** — run the logic against fixed in-memory data N
-  times.
-- **A job** — `SomeJob.new.perform(fixed_args)` N times.
+## Per-project examples
 
-### A CLI tool
+The shape is the same everywhere: one `bench/*.rb` and `run:` pointed at it — no
+database, no special environment. Most projects need just this minimal workflow
+(only `run:` changes). Workflow `.github/workflows/prperf.yml`:
 
-Run a representative subcommand on fixed input once (or a few times).
+```yaml
+name: prperf
+on:
+  push:
+    branches: [main, master]   # records the base (default branch)
+  pull_request:                # compared against the base
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - uses: rperf-dev/prperf-action@v1
+        with:
+          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
+```
+
+The single workflow's push records the base (see Setup). Put rperf 0.10 or newer
+in your Gemfile. The examples below differ only in the body of `bench/*.rb`.
+
+### gem / library
+
+Call the public API on deterministic, fixed input N times.
+
+```ruby
+# bench/main.rb
+require "your_gem"
+
+# Build fixed input deterministically (no randomness, time, or network)
+DATA = { "items" => Array.new(200) { |i| { "id" => i, "name" => "item-#{i}" } } }
+
+YourGem.encode(DATA)                 # warm up
+5_000.times { YourGem.encode(DATA) }
+```
+
+**Change**: the `require`, `DATA` (fixed input), the API you call, the count.
+
+> You can adapt an existing `benchmark/` script (e.g. benchmark-ips), but for
+> prperf use a **fixed-iteration loop**. A time-based loop varies the iteration
+> count, which makes alloc jiggle.
+
+### Sinatra / Rack
+
+Any Rack app: send one request through the full stack N times.
+
+```ruby
+# bench/request.rb
+require_relative "../app"            # load your Sinatra/Rack app
+require "rack/mock"
+
+app  = Sinatra::Application           # classic style. Modular: app = MyApp
+PATH = ENV.fetch("BENCH_PATH", "/")   # ← change to the path you care about
+make = -> { Rack::MockRequest.env_for(PATH, "HTTP_HOST" => "localhost") }
+pump = ->(r) { b = r[2]; b.each { |_| }; b.close if b.respond_to?(:close) }
+
+3.times    { pump.call(app.call(make.call)) }   # warm up
+2_000.times { pump.call(app.call(make.call)) }
+```
+
+Point the workflow's `run:` at `ruby bench/request.rb`.
+
+**Change**: the load line and `app` (the object you `run` in `config.ru`),
+`PATH`, the count. If the request reads a DB, add a postgres service and seed to
+the shared workflow (see Rails quickstart ②).
+
+### CLI / plain Ruby
+
+Calling the entry point **in-process** with fixed arguments N times gives the
+most stable samples.
+
+```ruby
+# bench/main.rb
+require_relative "../lib/my_cli"
+
+ARGS = %w[build --format json]        # fixed arguments
+200.times { MyCli.run(ARGS) }         # call your entry point
+```
+
+To measure the executable itself, first make sure it does enough work:
+
+```yaml
+run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby exe/mycli build fixtures/sample.txt
+```
+
+But a single short invocation collects few samples and is unstable. **Loop**
+(process a large fixed input inside), or use the in-process loop above.
+
+### Other frameworks
+
+- **Hanami / Roda / grape, etc.** — Roda and grape are Rack apps, so use the
+  "Sinatra / Rack" approach above. Hanami follows the same idea as Rails: measure
+  boot via the app's boot, and a request through Rack.
+
+For Rails, see the Rails quickstart.
 
 ## Don't cram everything into one benchmark
 

@@ -56,6 +56,7 @@ Open it from the Check Run's diff link or a shareable URL
 (`/view/<repo>/<sha>`). It is rperf's viewer, so the controls are the same.
 
 - **Flamegraph** — width is time (weight); wider is heavier.
+- **Top tab (table)** — the same data as a table of methods sorted by self and cumulative weight; handy when the flamegraph is hard to read or you want to tackle the heaviest first. The `Tags` tab breaks it down by rperf label (tag).
 - **Diff mode** — colors the difference between base and head: **methods whose
   share increased are red, decreased are blue**. The Check Run's diff link opens
   in this mode.
@@ -68,9 +69,8 @@ Share the permanent link (`/view/<repo>/<sha>`). Under the hood the viewer
 fetches a short-lived signed URL on demand, so revoked access takes effect
 within ten minutes.
 
-### Diff for a specific benchmark
-
-Open `/view/<repo>/diff?base=<sha>&head=<sha>&bench=<name>` to diff a particular
+With multiple benchmarks, open
+`/view/<repo>/diff?base=<sha>&head=<sha>&bench=<name>` to diff a particular
 benchmark. The viewer sidebar is scoped to one benchmark series, so boot and
 endpoint snapshots never interleave.
 
@@ -98,7 +98,7 @@ signing in).
 ## Common states
 
 - **"No base snapshot found"** — there is no latest base-branch snapshot yet.
-  The push-to-main workflow must have run at least once on a commit that is an
+  The workflow must have run on a push at least once on a commit that is an
   ancestor of the PR.
 - **Always "no change"** — the PR simply doesn't touch the path the benchmark
   exercises. Check that the benchmark covers what you care about.

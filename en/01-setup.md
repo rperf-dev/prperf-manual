@@ -6,8 +6,8 @@ service, see "What prperf is."
 There are three things to do:
 
 1. Install the GitHub App
-2. Add the workflows (one for PRs, one for pushes to the default branch)
-3. Provide a benchmark
+2. Provide a benchmark
+3. Add a workflow that runs it (triggered on both PRs and pushes to the default branch)
 
 ## 1. Prerequisites
 
@@ -23,30 +23,37 @@ There are three things to do:
 Install the prperf GitHub App on your repository from its App page. This lets
 prperf write the Check Run and PR comments for that repository.
 
-## 3. Add the workflows
+## 3. Provide a benchmark
 
-prperf compares the **PR head** against the **latest snapshot of the base
-branch**, so you need **two** workflows:
+What you measure determines the range of regressions you can catch. A good
+benchmark is deterministic, runs the path you care about, and does enough work
+to be stable. The full how-to and per-project examples are in "Writing a
+benchmark" — start from the template there if you don't have one yet.
 
-- **For PRs**: measure and upload on every PR (the side being compared)
-- **For pushes to main**: measure on each push to the default branch (this
-  supplies the comparison **base**)
+## 4. Add the workflow
 
-Without the main workflow there is nothing to compare against, and you get
-"No base snapshot found — showing this run's numbers only."
-
-### PR workflow
+Add a workflow that runs the benchmark from step 3. prperf compares the **PR
+head** against the **latest snapshot of the base branch**. Trigger the workflow
+on both `push` (the default branch) and `pull_request`: the push records the
+base, and the PR is compared against it (prperf tells them apart from the OIDC
+token's ref). List both `main` and `master` for the branch so it works either
+way — only your default branch exists, so only that one fires. Until the default
+branch has been pushed once, there's nothing to compare against: "No base
+snapshot found — showing this run's numbers only."
 
 ```yaml
 # .github/workflows/prperf.yml
 name: prperf
-on: pull_request
+on:
+  push:
+    branches: [ main, master ]   # records the base (your default branch)
+  pull_request:                  # compared against the base
 
 jobs:
   bench:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read         # for checkout
       id-token: write        # required for OIDC upload
     steps:
       - uses: actions/checkout@v6
@@ -58,67 +65,13 @@ jobs:
           run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
 ```
 
+`run:` must make rperf write at least one profile. Point its output at the
+action-provided `$PRPERF_DIR` with `--snapshot-dir "$PRPERF_DIR"`.
+
 You **must** include `permissions: id-token: write`. Without it there is no
-OIDC token and the upload cannot happen.
-
-### Push-to-main workflow
-
-```yaml
-# .github/workflows/prperf-base.yml
-name: prperf (base)
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  bench:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - uses: rperf-dev/prperf-action@v1
-        with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
-```
-
-Keep `run:` identical in both — you can only compare like with like.
-
-## 4. Provide a benchmark
-
-This is the most important and the most effort-intensive part. **What you
-measure** determines the value.
-
-`run:` is any command that emits at least one rperf profile. `$PRPERF_DIR` is a
-directory the action provides; passing it to `--snapshot-dir "$PRPERF_DIR"` is
-the usual pattern.
-
-A good benchmark is:
-
-- **Deterministic** — the less it depends on randomness, time, the network, or
-  external I/O, the better (allocations and GC counts stay stable).
-- **On the path you care about** — a PR that doesn't touch what the benchmark
-  exercises won't move the numbers, so the Check will read "no change" every
-  time.
-- **Reasonably sized** — a benchmark that finishes instantly collects few
-  samples and is noisy.
-
-### Zero-config start (Rails boot)
-
-If you don't have a meaningful benchmark yet, **measuring boot** works for any
-Rails app and is deterministic. It catches a real class of regression — boot
-slowdowns from eager loading or added gems.
-
-```yaml
-run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
-```
-
-Use this to get the "numbers appear" experience first, then graduate to a real
-benchmark.
+OIDC token and the upload cannot happen. `contents: read` lets
+`actions/checkout` fetch the repository; once you set `permissions:`, anything
+you don't list defaults to none, so both are spelled out.
 
 ## 5. Thresholds and comments (optional)
 
@@ -165,9 +118,7 @@ Threshold keys:
   and method thresholds mean different things per benchmark, so override them
   per benchmark only when needed.
 
-### Comment behavior
-
-Controlled by the `comment` input (default `on_threshold`):
+Comment behavior is controlled by the `comment` input (default `on_threshold`):
 
 | Value | Behavior |
 |---|---|
@@ -183,11 +134,12 @@ notifications stay at one.
 | Input | Default | Description |
 |---|---|---|
 | `run` | (required) | Measurement command; must emit at least one `.json.gz` |
+| `prepare_run` | `""` | One-time setup before measuring (generate fixtures, seed, etc.); not measured |
 | `count` | `3` | Number of runs; the server compares the median |
 | `benchmark` | `default` | Benchmark series name; one commit can carry several, compared independently |
 | `thresholds` | `""` | Thresholds for this benchmark (overrides the global defaults per key) |
 | `comment` | `on_threshold` | Comment behavior |
-| `server` | `https://rperf.atdot.net` | prperf server (replaceable) |
+| `server` | `https://prperf.atdot.net` | prperf server (replaceable) |
 | `upload` | `true` | Set `false` to measure without uploading |
 
 ## 7. Multiple benchmarks
@@ -207,14 +159,15 @@ its own base and shows them all in **one Check Run**.
     run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/render.rb
 ```
 
-Use the **same benchmark names** in the PR and push-to-main workflows so each
-series has a baseline.
+Use the **same benchmark names** on the PR and push-to-default-branch triggers
+so each series has a baseline.
 
 ## 8. Verify it works
 
-1. Push to main first → the main workflow runs and the base snapshot reaches the
-   server.
-2. Open a PR → the PR workflow runs; **numbers on the Check Run** mean success.
+1. Push to main first → the workflow runs on the push and the base snapshot
+   reaches the server.
+2. Open a PR → the workflow runs on the PR; **numbers on the Check Run** mean
+   success.
 3. A link to the uploaded result also appears in each job's **Summary**.
 
 ## Limitations

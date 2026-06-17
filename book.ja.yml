@@ -8,6 +8,5 @@ chapters:
   - ja/01-setup.md
   - ja/benchmark.md
   - ja/rails.md
-  - ja/other.md
   - ja/02-reading.md
   - ja/03-flamegraph.md

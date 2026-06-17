@@ -1,19 +1,47 @@
 # prperf Manual
 
-**prperf** is a thin GitHub App that **checks each PR for performance
-regressions**. Measurement happens inside your CI with the open-source sampling
-profiler [rperf](https://github.com/ko1/rperf); prperf only compares **the base
-branch's latest (e.g. main) against this PR** and reports the result on the PR.
-It complements production monitoring (Datadog / Grafana) rather than competing
-with it. (If you know Codecov for test coverage, this is that, for performance.)
+prperf is a thin GitHub App that checks each PR for performance regressions. Measurement runs inside your CI via the open-source sampling profiler [rperf](https://github.com/ko1/rperf); prperf just compares the base (e.g. main) against this PR and reports on the PR. If you know Codecov for test coverage, this is that, for performance.
 
 Open a PR and the Check Run shows numbers like:
 
 > 2,001ms → 2,140ms (+7%) · alloc 48,741 → 59,950 (+23%) · GC 4 → 7
 
-- **No secrets** — authentication uses the GitHub Actions OIDC token
-- **Never blocks CI** — the verdict is informational only
-- **Deterministic metrics** — allocation and GC counts are robust to CI noise
-- **Flamegraph diff** — see which method got heavier in the viewer
+The next chapter, "What prperf is," gives the overview.
 
-Start with "**What prperf is**" for the overview, then head to "Setup."
+## A tour of prperf
+
+### Setup
+
+1. Install the GitHub App.
+2. Provide a benchmark. Here we'll measure boot time with `bin/rails runner ""`.
+3. Add a workflow that runs it, triggered on both `push` (the default branch) and `pull_request`.
+
+```yaml
+# .github/workflows/prperf.yml
+name: prperf
+on:
+  push:
+    branches: [main, master]   # records the base (default branch; list both so main or master works)
+  pull_request:                # compared against the base
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, id-token: write }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with: { bundler-cache: true }
+      - uses: rperf-dev/prperf-action@v1
+        with:
+          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""   # ← your measurement command (step 2)
+```
+
+Options like threshold alerts, multiple benchmarks (`benchmark`), comment control (`comment`), and run count (`count`, default 3, median) are available too (see "Setup").
+
+### Results
+
+On each PR, the result shows up right in the PR's Checks (a summary compared against the base). A comment is posted only when a threshold is exceeded, and the flamegraph diff shows which method got heavier (see "Reading results").
+
+Every PR and push also records a measurement, so you can browse the history over time at [prperf.atdot.net](https://prperf.atdot.net).
+
+prperf never blocks CI and needs no secrets. PRs from forks can't be measured, and during the free beta only public repositories are supported.

@@ -18,15 +18,15 @@ Stacking thousands of those photos and tallying them gives the flamegraph.
 A picture beats words. Here is an example (bottom = entry, top = leaf):
 
 ```
-top (leaf)   │                  ┌───────────────┐
-             │                  │   String#*    │  ← what was actually on the CPU (wide = heavy)
-             │        ┌─────────┴───────┬───────┘
-             │        │  JSON.generate  │ …
-depth ↕      │   ┌────┴─────────────────┴────────────┐
-             │   │           Integer#times           │  ← a loop (wide, but it just calls children)
-bottom(root) │   ┌───────────────────────────────────┐
-             │   │              <main>               │  ← the whole program (always ~100% wide)
-             │   └───────────────────────────────────┘
+          ┌──────────┐
+          │ String#* │                      ← leaf: actually on the CPU (wider = heavier)
+      ┌───┴──────────┴───┐
+      │  JSON.generate   │                  ← its caller
+   ┌──┴──────────────────┴────────────┐
+   │          Integer#times           │     ← a loop: wide, but it just calls its children
+┌──┴──────────────────────────────────┴──┐
+│                 <main>                 │  ← the whole program; bottom = root, always ~100% wide
+└────────────────────────────────────────┘
 ```
 
 What this tells you:

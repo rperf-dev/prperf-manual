@@ -10,11 +10,14 @@ experience in 30 seconds; go to ② when you want more.
 boot itself. It catches added gems, heavier initializers, and autoload changes;
 it is **deterministic** and needs no extra files and no database.
 
-Paste this as `.github/workflows/prperf.yml` (for PRs):
+Paste this as `.github/workflows/prperf.yml`:
 
 ```yaml
 name: prperf
-on: pull_request
+on:
+  push:
+    branches: [main, master]   # records the base (default branch)
+  pull_request:                # compared against the base
 
 jobs:
   bench:
@@ -22,9 +25,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    env:
-      PRPERF_DEFAULT_THRESHOLDS: |
-        alloc: "+10%"
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -36,8 +36,7 @@ jobs:
           run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
 ```
 
-For the base, add `.github/workflows/prperf-base.yml` with the same steps but
-`on: push` / `branches: [main]` (see Setup). That alone gives you **boot
+The single workflow's push records the base, so that alone gives you **boot
 alloc/GC compared on every PR**.
 
 > Make sure rperf 0.10 or newer is in your Gemfile.
@@ -92,7 +91,10 @@ end
 
 ```yaml
 name: prperf
-on: pull_request
+on:
+  push:
+    branches: [main, master]   # records the base (default branch)
+  pull_request:                # compared against the base
 
 jobs:
   bench:
@@ -114,8 +116,6 @@ jobs:
       RAILS_ENV: benchmark
       SECRET_KEY_BASE: dummy-for-benchmark
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/app_benchmark
-      PRPERF_DEFAULT_THRESHOLDS: |
-        alloc: "+10%"
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -132,7 +132,7 @@ jobs:
           run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
 ```
 
-Add the same steps in an `on: push` workflow for the base.
+The single workflow records the base on push to the default branch.
 
 ## The only things you change
 

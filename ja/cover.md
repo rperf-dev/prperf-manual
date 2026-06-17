@@ -1,19 +1,52 @@
 # prperf マニュアル
 
-**prperf** は、コードの変更で性能が悪化していないかを **PR ごとに自動チェック**
-する薄い GitHub App です。測定はあなたの CI の中で OSS のサンプリングプロファイラ
-[rperf](https://github.com/ko1/rperf) が行い、prperf は **マージ先ブランチ
-(main など)の最新と、この PR を比較して結果を PR に通知するだけ**。本番監視
-(Datadog / Grafana)とは競合せず補完します。(テストカバレッジの Codecov を
-知っていれば、その「性能版」です。)
+prperf は、コードの変更で性能が悪化していないかを PR ごとに自動チェックする薄い GitHub App です。
+測定は CI のなかで OSS のサンプリングプロファイラ [rperf](https://github.com/ko1/rperf) が行い、prperf は base（main など）とこの PR を比べて結果を PR に通知するだけです。
+テストカバレッジを CI で追う Codecov を知っていれば、その性能版にあたります。
 
-PR を作ると、Check Run にこんな数字が出ます:
+PR を作ると、Check Run に次のような数字が出ます。
 
 > 2,001ms → 2,140ms (+7%) · alloc 48,741 → 59,950 (+23%) · GC 4 → 7
 
-- **シークレット不要** — 認証は GitHub Actions の OIDC トークン
-- **CI を絶対に落とさない** — 判定はあくまで参考表示
-- **決定的な指標** — アロケーション数・GC 回数は CI のノイズに強い
-- **フレームグラフ diff** — どのメソッドが重くなったかを viewer で確認
+全体像は次章「このサービスとは」で説明します。
 
-まずは「**このサービスとは**」で全体像をつかんでから、「登録編」へ進んでください。
+## prperf ひとめぐり
+
+### 導入
+
+1. GitHub App をインストールします。
+2. ベンチマークを用意します。ここでは `bin/rails runner ""` でブート時間を計るベンチマークとします。
+3. それを実行するワークフローを追加します。`push`（既定ブランチ）と `pull_request` の両方をトリガにします。
+
+```yaml
+# .github/workflows/prperf.yml
+name: prperf
+on:
+  push:
+    branches: [main, master]   # base を記録（既定ブランチ。両方書けば main でも master でも動く）
+  pull_request:                # PR を base と比較
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, id-token: write }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with: { bundler-cache: true }
+      - uses: rperf-dev/prperf-action@v1
+        with:
+          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""   # ← 計測コマンド（手順2のベンチ）
+```
+
+閾値による警告、複数ベンチマーク（`benchmark`）、コメントの制御（`comment`）、計測回数（`count`、既定 3 回、中央値）といった設定もあります（詳しくは「登録編」）。
+
+### 結果
+
+各 PR では、GitHub の PR 画面の Checks にそのまま結果が出ます（base と比べた要約）。
+閾値を超えたときだけ PR にコメントが付きます。
+どのメソッドが重くなったかは、フレームグラフの diff でわかります（詳しくは「読み方編」）。
+
+PR と push のたびに結果が記録され、[prperf.atdot.net](https://prperf.atdot.net) でこれまでの履歴（推移）を確認できます。
+
+prperf は CI を落とさず、シークレットも要りません。
+ただし fork からの PR は計測できず、無料βの間は public リポジトリだけが対象です。
