@@ -32,9 +32,10 @@ prepended.
 
 - **Allocation and GC counts are deterministic** — they barely move even when
   the CI runner changes. These are the primary signal for regressions.
-- **Time (total_ms / cpu_ms) is noisy** — CI wall time swings ±10–20%. We
-  compare the **median** of `count` (default 3) runs, but treat time as
-  meaningful only when it moves a lot.
+- **Time (total_ms / cpu_ms) is noisy** — CI wall time swings ±10–20%. prperf
+  measures each commit `count` times (default 3, configurable via the action
+  input) and compares/shows the **median** — the first run is often a cold-start
+  outlier the median absorbs. Treat time as meaningful only when it moves a lot.
 
 ## The PR comment (sticky)
 
@@ -59,8 +60,10 @@ Open it from the Check Run's diff link or a shareable URL
 - **Diff mode** — colors the difference between base and head: **methods whose
   share increased are red, decreased are blue**. The Check Run's diff link opens
   in this mode.
-- **Time-travel sidebar** — past snapshots of that benchmark series are listed,
-  so you can walk main's trend. `j` / `k` move to newer / older.
+- **Time-travel sidebar** — **one row per commit (the median of the N runs)** for
+  that benchmark series, so you can walk main's and a PR's trend. A PR's commits
+  group under `PR#<number> <branch>`, main's under `main`. `j` / `k` move to
+  newer / older.
 - **Pin a method** — Shift+click a method to pin it; a sparkline shows its share
   across snapshots.
 
