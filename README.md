@@ -17,3 +17,9 @@ ligarb serve   # ローカルプレビュー
 ```
 
 セットアップ手順は [SETUP.md](SETUP.md) を参照してください。
+
+## 継続的ベンチマーク
+
+この本を生成する `ligarb build` の所要時間は、PR ごとに [prperf](https://rperf.atdot.net)
+で計測し、base（main）と比較しています（prperf 自身のドッグフーディング）。結果は各 PR の
+Check Run に表示されます。
