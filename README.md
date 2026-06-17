@@ -23,3 +23,8 @@ ligarb serve   # ローカルプレビュー
 この本を生成する `ligarb build` の所要時間は、PR ごとに [prperf](https://rperf.atdot.net)
 で計測し、base（main）と比較しています（prperf 自身のドッグフーディング）。結果は各 PR の
 Check Run に表示されます。
+
+計測は1コミットあたり既定で **3 回**実行し（[prperf-action](https://github.com/rperf-dev/prperf-action)
+の `count` 入力で変更可能）、**中央値**で比較・表示します。初回 run はコールドスタート（Ruby 起動・
+ライブラリ読み込み・キャッシュ未温）で遅くなりがちなので、中央値で外れ値を吸収する設計です。ビューアの
+サイドバーも各コミット 1 行（中央値）で表示します。
