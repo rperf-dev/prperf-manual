@@ -14,6 +14,8 @@ There are three things to do:
 - **rperf 0.10 or newer** in your Gemfile. prperf uses the `meta` / `summary`
   embedded in the profile; with an older rperf the action stops with a clear
   error.
+- **Ruby 3.4 or newer** (required by rperf 0.10). If your CI `ruby/setup-ruby`
+  uses an older Ruby, `bundle install` (`gem install rperf`) fails.
 - A **benchmark command** to measure (see below).
 - A **public repository**. Private repositories require a paid plan (currently
   public-only during the free beta).
