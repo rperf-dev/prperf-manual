@@ -9,7 +9,7 @@ There are three things to do:
 2. Provide a benchmark
 3. Add a workflow that runs it (triggered on both PRs and pushes to the default branch)
 
-## 1. Prerequisites
+## Prerequisites
 
 - **rperf 0.10 or newer** in your Gemfile. prperf uses the `meta` / `summary`
   embedded in the profile; with an older rperf the action stops with a clear
@@ -18,21 +18,21 @@ There are three things to do:
 - A **public repository**. Private repositories require a paid plan (currently
   public-only during the free beta).
 
-## 2. Install the GitHub App
+## Install the GitHub App
 
 Install the prperf GitHub App on your repository from its App page. This lets
 prperf write the Check Run and PR comments for that repository.
 
-## 3. Provide a benchmark
+## Provide a benchmark
 
 What you measure determines the range of regressions you can catch. A good
 benchmark is deterministic, runs the path you care about, and does enough work
-to be stable. The full how-to and per-project examples are in "Writing a
-benchmark" — start from the template there if you don't have one yet.
+to be stable. On a Rails project, measuring boot is an easy first benchmark to
+try. The full how-to and per-project examples are in "Writing a benchmark."
 
-## 4. Add the workflow
+## Add the workflow
 
-Add a workflow that runs the benchmark from step 3. prperf compares the **PR
+Add a workflow that runs your benchmark. prperf compares the **PR
 head** against the **latest snapshot of the base branch**. Trigger the workflow
 on both `push` (the default branch) and `pull_request`: the push records the
 base, and the PR is compared against it (prperf tells them apart from the OIDC
@@ -73,9 +73,11 @@ OIDC token and the upload cannot happen. `contents: read` lets
 `actions/checkout` fetch the repository; once you set `permissions:`, anything
 you don't list defaults to none, so both are spelled out.
 
-## 5. Thresholds and comments (optional)
+## Thresholds and comments (optional)
 
-Thresholds are **optional**. Without them the Check Run still shows numbers, but
+A threshold caps how much a metric (allocations, GC, time, etc.) may increase
+from base to head; crossing it adds a ⚠️ and, per `comment`, a PR comment.
+Thresholds are **optional**: without them the Check Run still shows numbers, but
 no ⚠️ and no comment. Add them only when you want to be warned on a regression.
 
 All configuration lives **in the workflow** — there is no separate config file.
@@ -129,7 +131,7 @@ Comment behavior is controlled by the `comment` input (default `on_threshold`):
 There is one comment per PR, and each push **edits the same comment**, so
 notifications stay at one.
 
-## 6. Action inputs
+## Action inputs
 
 | Input | Default | Description |
 |---|---|---|
@@ -142,7 +144,7 @@ notifications stay at one.
 | `server` | `https://prperf.atdot.net` | prperf server (replaceable) |
 | `upload` | `true` | Set `false` to measure without uploading |
 
-## 7. Multiple benchmarks
+## Multiple benchmarks
 
 You can measure one commit with several benchmarks — use **one step per
 benchmark** with a distinct `benchmark` name. The server compares each against
@@ -162,7 +164,7 @@ its own base and shows them all in **one Check Run**.
 Use the **same benchmark names** on the PR and push-to-default-branch triggers
 so each series has a baseline.
 
-## 8. Verify it works
+## Verify it works
 
 1. Push to main first → the workflow runs on the push and the base snapshot
    reaches the server.

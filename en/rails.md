@@ -4,7 +4,7 @@ Before agonizing over "what to measure," here is an **almost copy-paste**
 starting point for Rails, in two steps. Step ① gives you the "numbers appear"
 experience in 30 seconds; go to ② when you want more.
 
-## ① Measure boot first (no extra files)
+## Measure boot first (no extra files)
 
 `bin/rails runner ""` **boots the app and exits doing nothing**, so it measures
 boot itself. It catches added gems, heavier initializers, and autoload changes;
@@ -41,11 +41,11 @@ alloc/GC compared on every PR**.
 
 > Make sure rperf 0.10 or newer is in your Gemfile.
 
-## ② Measure one request (the full version)
+## Measure one request (the full version)
 
 This measures the real cost of one request. Paste three files.
 
-### (a) A measurement environment `config/environments/benchmark.rb`
+### A measurement environment `config/environments/benchmark.rb`
 
 A production-like but CI-friendly dedicated environment.
 
@@ -63,7 +63,7 @@ Rails.application.configure do
 end
 ```
 
-### (b) The benchmark `bench/request.rb`
+### The benchmark `bench/request.rb`
 
 ```ruby
 # bench/request.rb — one request through the full stack, N times
@@ -87,7 +87,7 @@ end
 1_000.times { consume.call(app.call(build_env.call)) }
 ```
 
-### (c) The workflow `.github/workflows/prperf.yml`
+### The workflow `.github/workflows/prperf.yml`
 
 ```yaml
 name: prperf

@@ -4,7 +4,7 @@
 
 まず ① で「数字が出る」体験を 30 秒で作り、必要なら ② に進んでください。
 
-## ① まず boot を測る(ファイル追加ゼロ)
+## まず boot を測る(ファイル追加ゼロ)
 
 `bin/rails runner ""` はアプリを起動して何もせず終わるので、起動そのものを計測できます。
 
@@ -41,13 +41,13 @@ jobs:
 
 > rperf 0.10 以上を Gemfile に入れておいてください。
 
-## ② 1 リクエストを測る(本格版)
+## 1 リクエストを測る(本格版)
 
 実アプリの「1 リクエストの重さ」を測ります。
 
 3 ファイルを貼るだけです。
 
-### (a) 計測用の環境 `config/environments/benchmark.rb`
+### 計測用の環境 `config/environments/benchmark.rb`
 
 production 相当だが CI で動かしやすい専用環境を作ります。
 
@@ -65,7 +65,7 @@ Rails.application.configure do
 end
 ```
 
-### (b) ベンチ本体 `bench/request.rb`
+### ベンチ本体 `bench/request.rb`
 
 アプリを起動し、固定のエンドポイントへのリクエストを Rack 経由で N 回通すスクリプトです。
 レスポンスの body まで消費して、レンダリングまで含めて測ります。
@@ -93,7 +93,7 @@ end
 1_000.times { consume.call(app.call(build_env.call)) }
 ```
 
-### (c) ワークフロー `.github/workflows/prperf.yml`
+### ワークフロー `.github/workflows/prperf.yml`
 
 ```yaml
 name: prperf

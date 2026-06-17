@@ -1,46 +1,51 @@
 # Writing a benchmark
 
-prperf's value is decided almost entirely by **what you measure**. This is the
-most important — and most effort-intensive — part. Here is how to write a good
-benchmark, with concrete examples.
+The numbers prperf reports are decided almost entirely by what you measure.
+Benchmark design is the part of this chapter that most shapes the result, and
+the part that takes the most effort.
 
-## What a benchmark is (in prperf)
+## What a benchmark is
 
-The command you pass to `run:` is the "benchmark." Usually it's a **small Ruby
-script** (e.g. `bench/main.rb`) wrapped in `rperf record`:
+To prperf, a benchmark is the command you pass to `run:`. Usually it's a small
+Ruby script (for example `bench/main.rb`) wrapped in `rperf record`:
 
 ```yaml
 run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
 ```
 
-Put rperf in your Gemfile (0.10 or newer) so `bundle exec rperf` resolves. The
-action runs it `count` (default 3) times and the server compares the median
-against base. What you write is the body of `bench/main.rb` — **a script that
-does a representative chunk of work**.
+Put rperf in your Gemfile (0.10 or newer, so `bundle exec rperf` resolves). The
+action runs this `count` times (default 3) and the server compares the median
+against base. What you write is the body of `bench/main.rb` — a script that does
+a representative chunk of work.
 
-## The core principle: "the path you care about, deterministically, enough of it"
+## What makes a good benchmark
 
-A good benchmark has three properties:
+A good benchmark satisfies three things.
 
-1. **Exercises what you care about** — a PR that doesn't touch that code won't
-   move the numbers.
-2. **Deterministic** (does exactly the same work every time) — otherwise alloc
-   and GC jiggle and you get warnings that aren't regressions.
-3. **Does enough work** — a benchmark that finishes instantly collects few
-   samples and is unstable.
+1. **It exercises the code you care about.** A PR that doesn't touch that code
+   leaves the numbers unchanged.
+2. **It is deterministic** (does exactly the same work every time). Otherwise
+   alloc and GC drift and you get warnings that aren't regressions.
+3. **It does a fixed amount of work.** If it finishes in an instant it collects
+   few samples and the result is unstable.
 
-prperf's primary metrics (allocation and GC counts) are deterministic, so **as
-long as your benchmark is deterministic, these are stable to the single unit
-across PRs**. A jiggly benchmark throws that strength away.
+The axis of regression judgement is the allocation count. When a benchmark is
+deterministic, the allocation count is stable to the single object across PRs,
+so even a small increase is caught. GC counts are deterministic and easy to
+count too, so they are shown alongside. A benchmark that drifts loses that
+stability.
 
-## Skeleton (template)
+## How to write one
+
+The basic shape of `bench/main.rb` is: build a fixed input once, warm up, then
+repeat the real loop enough times.
 
 ```ruby
 # bench/main.rb
 require "json"
 require_relative "../config/environment"   # if needed (Rails, etc.)
 
-# 1) Build fixed input once (no randomness, time, or network)
+# 1) Build the fixed input once (no randomness, time, or network)
 DATA = { "users" => Array.new(100) { |i| { "id" => i, "name" => "user#{i}" } } }
 
 # 2) Warm up (exclude one-time lazy loading / initialization from the measurement)
@@ -52,29 +57,17 @@ JSON.generate(DATA)
 end
 ```
 
-Key points:
+Fix the input; don't let it depend on `rand`, `Time.now`, a DB, an external API,
+or filesystem enumeration order. If you truly need randomness, pin it with
+`srand(42)`. Warm up so that one-time work (autoload, constant init, lazy
+loading) stays out of the measurement. Tune the count (5,000 here) so the whole
+run takes a few hundred ms to a few seconds: too short is unstable, too long
+slows CI down.
 
-- **Fixed input.** Don't depend on `rand`, `Time.now`, a DB, an external API, or
-  filesystem enumeration order. If you truly need randomness, pin it with
-  `srand(42)`.
-- **Warm up** to exclude one-time work (autoload, constant init, warmup effects)
-  from the measurement.
-- **The count (5,000 here)** should make the whole run a few hundred ms to a few
-  seconds. Too short is unstable; too long slows CI.
+## Check that it's deterministic
 
-## Determinism checklist
-
-- [ ] No `rand` / `SecureRandom` (or pinned with `srand`)
-- [ ] Result does not depend on `Time.now` / `Date.today`
-- [ ] No network or external services
-- [ ] Uses fixed in-memory data / fixtures, not a real DB
-- [ ] Does not depend on file enumeration order (`Dir.glob`, etc.)
-- [ ] Input size is the same every run
-
-## Check locally that it doesn't jiggle
-
-Before wiring it into CI, run it a few times locally and confirm the
-**allocation and GC counts are identical** each time. `rperf stat` prints the
+Before wiring it into CI, run it two or three times locally and confirm the
+allocation and GC counts are identical each time. `rperf stat` prints the
 summary to stderr.
 
 ```sh
@@ -82,20 +75,32 @@ bundle exec rperf stat -- ruby bench/main.rb
 bundle exec rperf stat -- ruby bench/main.rb
 ```
 
-If `allocated_objects` and the GC counts match across runs, it's deterministic.
-If they vary, hunt for the nondeterminism using the checklist above. To inspect
-the flamegraph locally:
+If `allocated_objects` and the GC counts match across runs, the benchmark is
+deterministic. If they drift, eliminate the causes one at a time.
+
+- [ ] No `rand` or `SecureRandom` (pin with `srand` if you must)
+- [ ] The result doesn't depend on `Time.now` or `Date.today`
+- [ ] No network or external services
+- [ ] No dependence on changing DB state (use fixed in-memory data, fixtures, or
+      a fixed seed)
+- [ ] No dependence on file enumeration order (`Dir.glob` order, etc.)
+- [ ] The input size is the same every run
+
+To get a sense of the cause, look inside with the flamegraph.
 
 ```sh
 bundle exec rperf record -o out.json.gz -- ruby bench/main.rb
 bundle exec rperf report out.json.gz       # opens the viewer
 ```
 
+Once you've pinned down the nondeterminism, confirm the match with `rperf stat`
+again before putting it into CI.
+
 ## Preparation (optional)
 
-If the benchmark needs a one-time setup before it runs — generating fixtures,
-seeding a DB, building assets — put it in `prepare_run:`. It runs once before
-the measurement runs and is not measured.
+If you have setup that should run once before the benchmark, put it in
+`prepare_run:`. Generating fixtures, seeding a DB, and building assets all
+qualify. It runs once before the measurement and is not included in it.
 
 ```yaml
 - uses: rperf-dev/prperf-action@v1
@@ -109,60 +114,33 @@ the same state.
 
 ## Per-project examples
 
-The shape is the same everywhere: one `bench/*.rb` and `run:` pointed at it — no
-database, no special environment. Most projects need just this minimal workflow
-(only `run:` changes). Workflow `.github/workflows/prperf.yml`:
-
-```yaml
-name: prperf
-on:
-  push:
-    branches: [main, master]   # records the base (default branch)
-  pull_request:                # compared against the base
-
-jobs:
-  bench:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - uses: rperf-dev/prperf-action@v1
-        with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
-```
-
-The single workflow's push records the base (see Setup). Put rperf 0.10 or newer
-in your Gemfile. The examples below differ only in the body of `bench/*.rb`.
+Use the workflow from "Setup" as is, and just point `run:` at each
+`bench/*.rb`. Only benchmarks that hit a DB add a seed to the preparation.
 
 ### gem / library
 
-Call the public API on deterministic, fixed input N times.
+Call the public API N times on deterministic, fixed input. With the input and
+call count fixed, you measure only regressions in the public API.
 
 ```ruby
 # bench/main.rb
 require "your_gem"
 
-# Build fixed input deterministically (no randomness, time, or network)
+# Build the fixed input deterministically (no randomness, time, or network)
 DATA = { "items" => Array.new(200) { |i| { "id" => i, "name" => "item-#{i}" } } }
 
 YourGem.encode(DATA)                 # warm up
 5_000.times { YourGem.encode(DATA) }
 ```
 
-**Change**: the `require`, `DATA` (fixed input), the API you call, the count.
+Change the `require`, the fixed input `DATA`, the API you call, and the count.
+You can reuse an existing `benchmark/` script (benchmark-ips and the like), but a
+time-based loop varies its iteration count and makes alloc drift, so switch to a
+fixed-count loop.
 
-> You can adapt an existing `benchmark/` script (e.g. benchmark-ips), but for
-> prperf use a **fixed-iteration loop**. A time-based loop varies the iteration
-> count, which makes alloc jiggle.
+### Sinatra / Rack apps
 
-### Sinatra / Rack
-
-Any Rack app: send one request through the full stack N times.
+For any Rack app, send one request through the full stack N times.
 
 ```ruby
 # bench/request.rb
@@ -170,7 +148,7 @@ require_relative "../app"            # load your Sinatra/Rack app
 require "rack/mock"
 
 app  = Sinatra::Application           # classic style. Modular: app = MyApp
-PATH = ENV.fetch("BENCH_PATH", "/")   # ← change to the path you care about
+PATH = ENV.fetch("BENCH_PATH", "/")   # change to the path you want to measure
 make = -> { Rack::MockRequest.env_for(PATH, "HTTP_HOST" => "localhost") }
 pump = ->(r) { b = r[2]; b.each { |_| }; b.close if b.respond_to?(:close) }
 
@@ -178,16 +156,15 @@ pump = ->(r) { b = r[2]; b.each { |_| }; b.close if b.respond_to?(:close) }
 2_000.times { pump.call(app.call(make.call)) }
 ```
 
-Point the workflow's `run:` at `ruby bench/request.rb`.
-
-**Change**: the load line and `app` (the object you `run` in `config.ru`),
-`PATH`, the count. If the request reads a DB, add a postgres service and seed to
-the shared workflow (see Rails quickstart ②).
+Set `run:` to `ruby bench/request.rb`. Change the load line, `app` (the object
+you `run` in `config.ru`), `PATH`, and the count. If the request reads a DB, add
+a seed to the preparation and a postgres service to the workflow (see the "Rails
+quickstart").
 
 ### CLI / plain Ruby
 
-Calling the entry point **in-process** with fixed arguments N times gives the
-most stable samples.
+Calling the entry point in-process N times with fixed arguments avoids startup
+cost and external state, and keeps samples stable.
 
 ```ruby
 # bench/main.rb
@@ -197,52 +174,39 @@ ARGS = %w[build --format json]        # fixed arguments
 200.times { MyCli.run(ARGS) }         # call your entry point
 ```
 
-To measure the executable itself, first make sure it does enough work:
+To measure the executable itself, confirm it does enough work and then pass it
+to `run:` directly. A single short startup collects few samples and is unstable,
+so loop over it, or use the in-process loop above.
 
-```yaml
-run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby exe/mycli build fixtures/sample.txt
-```
+### Rails apps
 
-But a single short invocation collects few samples and is unstable. **Loop**
-(process a large fixed input inside), or use the in-process loop above.
-
-### Other frameworks
-
-- **Hanami / Roda / grape, etc.** — Roda and grape are Rack apps, so use the
-  "Sinatra / Rack" approach above. Hanami follows the same idea as Rails: measure
-  boot via the app's boot, and a request through Rack.
-
-For Rails, see the Rails quickstart.
-
-## Don't cram everything into one benchmark
-
-A giant "everything" benchmark makes it hard to tell what regressed. Prefer to
-**split by concern**. prperf compares **multiple benchmarks independently** for
-one commit — just use separate steps with different `benchmark:` names (see
-"Multiple benchmarks" in Setup).
-
-```yaml
-- uses: rperf-dev/prperf-action@v1
-  with: { benchmark: parse,     run: 'bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/parse.rb' }
-- uses: rperf-dev/prperf-action@v1
-  with: { benchmark: serialize, run: 'bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/serialize.rb' }
-```
+Rails has its own chapter. For boot, endpoints, typical queries, and jobs, see
+the "Rails quickstart." Roda and grape are Rack apps, so measure them as in
+"Sinatra / Rack"; Hanami follows the same idea as Rails.
 
 ## Anti-patterns
 
-- **Measuring the test suite directly** (`rperf record -- rspec`). Adding tests
-  in a PR inflates alloc, so you can't separate that from a regression. Doing it
-  well needs normalization.
-- **Depending on randomness / time / network** → jiggles, false positives.
-- **Too short** → time is noisy and alloc is too small to show a delta.
-- **Measuring a path you barely touch** → the PR never moves it; always "no
-  change."
-- **Real external dependencies (API, DB)** → varies with the network.
+The following ways of measuring move the numbers for reasons unrelated to the
+PR's changes, so avoid them.
+
+- **Measuring the test suite as is** (`rperf record -- rspec`). Adding tests in a
+  PR inflates alloc, and you can't tell that apart from a regression.
+- **Depending on randomness, time, or network.** It drifts every run and causes
+  false positives.
+- **Too short.** Time drifts and alloc is too small for a delta to show.
+- **Measuring a path you barely care about.** The PR never touches it, so it
+  always reads "no change."
+- **Using real external dependencies (API or DB).** It drifts with the network.
+
+A giant everything-in-one benchmark is also worth avoiding, because it's hard to
+tell what regressed. Split by concern and measure several benchmarks for one
+commit, and you can trace the regressed code through the Check Run and the diff
+(for how to split, see "Multiple benchmarks" in "Setup").
 
 ## How this ties to thresholds
 
-A deterministic benchmark lets you set **tight relative thresholds** (e.g.
-`alloc: "+5%"`) without false positives. A jiggly one forces loose thresholds
-and a weak signal. In short: **a good benchmark means a sharp threshold.** Start
-with one benchmark that measures your single most important path,
-deterministically.
+A deterministic benchmark lets you set tight relative thresholds (for example
+`alloc: "+5%"`) without false positives. A benchmark that drifts forces you to
+loosen the thresholds, and the signal weakens. Start with one benchmark that
+measures, deterministically, the path your PRs are most likely to touch, and get
+to a state where base and head show a difference.
