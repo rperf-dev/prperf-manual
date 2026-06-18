@@ -6,7 +6,7 @@ First, let's be clear about **what prperf is**.
 
 **prperf is a thin GitHub App that automatically checks each PR for performance
 regressions and reports the result on the PR.** Measurement happens inside your
-CI with the open-source [rperf](https://github.com/ko1/rperf) profiler; prperf
+CI with the open-source Ruby profiler [rperf](https://github.com/ko1/rperf); prperf
 itself just compares **the base branch's latest measurement (usually main)**
 against **this PR's**, and reports.
 

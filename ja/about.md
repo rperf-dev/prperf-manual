@@ -3,7 +3,7 @@
 ## ひとことで
 
 prperf は、コードの変更で性能が悪化していないかを PR ごとに自動チェックして PR に知らせる GitHub App です。
-測定はあなたの CI の中で OSS の [rperf](https://github.com/ko1/rperf) が行います。
+測定はあなたの CI の中で OSS の Ruby プロファイラ [rperf](https://github.com/ko1/rperf) が行います。
 prperf 自身は、マージ先ブランチ(ふつう main)の最新の計測と、この PR の計測を比べて結果を通知するだけの薄い App です。
 
 このマージ先ブランチ側の基準を base、PR 側を head と呼びます(GitHub の PR 用語と同じ)。

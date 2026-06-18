@@ -1,6 +1,6 @@
 # prperf Manual
 
-prperf is a thin GitHub App that checks each PR for performance regressions. Measurement runs inside your CI via the open-source sampling profiler [rperf](https://github.com/ko1/rperf); prperf just compares the base (e.g. main) against this PR and reports on the PR. If you know Codecov for test coverage, this is that, for performance.
+prperf is a thin GitHub App that checks each PR for performance regressions. Measurement runs inside your CI via the open-source Ruby sampling profiler [rperf](https://github.com/ko1/rperf); prperf just compares the base (e.g. main) against this PR and reports on the PR. If you know Codecov for test coverage, this is that, for performance.
 
 Open a PR and the Check Run shows numbers like:
 

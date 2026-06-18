@@ -1,7 +1,7 @@
 # prperf マニュアル
 
 prperf は、コードの変更で性能が悪化していないかを PR ごとに自動チェックする薄い GitHub App です。
-測定は CI のなかで OSS のサンプリングプロファイラ [rperf](https://github.com/ko1/rperf) が行い、prperf は base（main など）とこの PR を比べて結果を PR に通知するだけです。
+測定は CI のなかで OSS の Ruby 向けサンプリングプロファイラ [rperf](https://github.com/ko1/rperf) が行い、prperf は base（main など）とこの PR を比べて結果を PR に通知するだけです。
 テストカバレッジを CI で追う Codecov を知っていれば、その性能版にあたります。
 
 PR を作ると、Check Run に次のような数字が出ます。

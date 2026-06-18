@@ -1,7 +1,7 @@
 title: "prperf マニュアル"
 language: "ja"
 inherit: book.yml
-description: "PR ごとに性能回帰をチェックする GitHub App「prperf」の導入と結果の読み方。"
+description: "Ruby の性能回帰を PR ごとにチェックする GitHub App「prperf」の導入と結果の読み方。"
 chapters:
   - cover: ja/cover.md
   - ja/about.md
