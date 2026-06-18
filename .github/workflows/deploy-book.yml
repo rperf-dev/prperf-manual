@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -31,11 +31,11 @@ jobs:
         run: gem install ligarb
       - name: Build book
         run: ligarb build   # build/index.html を生成
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         with:
           # Pages が未設定でもワークフロー側で有効化する（初回 push のレースを防ぐ）。
           enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: build
   deploy:
@@ -46,4 +46,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -21,7 +21,7 @@ jobs:
       contents: read
       id-token: write   # required: prperf uploads authenticate via the OIDC token
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.4"   # rperf requires Ruby >= 3.4.0
