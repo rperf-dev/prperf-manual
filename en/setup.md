@@ -15,7 +15,7 @@ writes the Check Run and the sticky PR comment with the workflow's
 
 ## Prerequisites
 
-- **rperf 0.11 or newer** in your Gemfile (Bundler projects). prperf uses the
+- **rperf 0.11.1 or newer** in your Gemfile (Bundler projects). prperf uses the
   `meta` / `summary` embedded in the profile; with an older rperf the action
   stops with a clear error. The compatibility contract is the profile's
   **format_version**, not the rperf gem version: any rperf whose profile format

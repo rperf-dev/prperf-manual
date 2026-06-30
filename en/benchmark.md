@@ -14,7 +14,7 @@ for you:
 run: ruby bench/main.rb
 ```
 
-Put rperf in your Gemfile (0.11 or newer, so `bundle exec rperf` resolves). The
+Put rperf in your Gemfile (0.11.1 or newer, so `bundle exec rperf` resolves). The
 action runs this `count` times (default 3) and the server compares the median
 against base. What you write is the body of `bench/main.rb` — a script that does
 a representative chunk of work.
