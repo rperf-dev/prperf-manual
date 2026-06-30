@@ -57,9 +57,8 @@ prperf サーバー
 
 ## 使う側の体験
 
-1. GitHub App をリポジトリにインストール
-2. 提供する GitHub Action をワークフローに数行追加
-3. PR を作ると Check と PR コメントに結果が付く
+1. 提供する GitHub Action をワークフローに数行追加（public はこれだけ。private は加えて GitHub App をインストール）
+2. PR を作ると Check と PR コメントに結果が付く
 
 ワークフローは 1 本です。
 push(既定ブランチ)で base を記録し、pull_request でその base と比較します。
@@ -75,14 +74,14 @@ on:
 jobs:
   bench:
     runs-on: ubuntu-latest
-    permissions: { contents: read, id-token: write }
+    permissions: { contents: read, id-token: write, checks: write, pull-requests: write }
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec ruby bench/run.rb
+          run: ruby bench/run.rb
 ```
 
 ## なぜ信頼できるか(設計の勘所)

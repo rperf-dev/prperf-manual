@@ -26,6 +26,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -34,7 +36,7 @@ jobs:
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: boot
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
 ```
 
 この 1 本で、既定ブランチ(main または master)への push が記録した boot の base と、PR の head が比較されます。
@@ -108,6 +110,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      checks: write
+      pull-requests: write
     services:
       postgres:                      # DB を使わないなら services と db:prepare は消す
         image: postgres:16
@@ -131,11 +135,11 @@ jobs:
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: boot
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: request
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
+          run: ruby bench/request.rb
 ```
 
 この場合も、既定ブランチへの push が base を記録し、PR の head が比較されます。

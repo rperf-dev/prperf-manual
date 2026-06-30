@@ -61,9 +61,10 @@ prperf server
 
 ## The user experience
 
-1. Install the GitHub App on your repository
-2. Add a few lines of the provided GitHub Action to your workflow
-3. Open a PR and the result appears on the Check and a PR comment
+1. Add a few lines of the provided GitHub Action to your workflow (a public
+   repository needs nothing else; a private repository also installs the GitHub
+   App)
+2. Open a PR and the result appears on the Check and a PR comment
 
 ## Why it's trustworthy (the design ideas)
 

@@ -14,9 +14,11 @@ PR を作ると、Check Run に次のような数字が出ます。
 
 ### 導入
 
-1. GitHub App をインストールします。
-2. ベンチマークを用意します。ここでは `bin/rails runner ""` でブート時間を計るベンチマークとします。
-3. それを実行するワークフローを追加します。`push`（既定ブランチ）と `pull_request` の両方をトリガにします。
+1. ベンチマークを用意します。ここでは `bin/rails runner ""` でブート時間を計るベンチマークとします。
+2. それを実行するワークフローを追加します。`push`（既定ブランチ）と `pull_request` の両方をトリガにします。
+
+public リポジトリはこれだけで動きます。
+private リポジトリは加えて prperf の GitHub App をインストールします（有料プラン）。
 
 ```yaml
 # .github/workflows/prperf.yml
@@ -28,14 +30,14 @@ on:
 jobs:
   bench:
     runs-on: ubuntu-latest
-    permissions: { contents: read, id-token: write }
+    permissions: { contents: read, id-token: write, checks: write, pull-requests: write }
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""   # ← 計測コマンド（手順2のベンチ）
+          run: bin/rails runner ""   # ← 計測コマンド（手順1のベンチ）
 ```
 
 閾値による警告、複数ベンチマーク（`benchmark`）、コメントの制御（`comment`）、計測回数（`count`、既定 3 回、中央値）といった設定もあります（詳しくは「登録編」）。

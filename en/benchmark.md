@@ -7,10 +7,11 @@ the part that takes the most effort.
 ## What a benchmark is
 
 To prperf, a benchmark is the command you pass to `run:`. Usually it's a small
-Ruby script (for example `bench/main.rb`) wrapped in `rperf record`:
+Ruby script (for example `bench/main.rb`); the action wraps it in `rperf record`
+for you:
 
 ```yaml
-run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/main.rb
+run: ruby bench/main.rb
 ```
 
 Put rperf in your Gemfile (0.10 or newer, so `bundle exec rperf` resolves). The
@@ -106,7 +107,7 @@ qualify. It runs once before the measurement and is not included in it.
 - uses: rperf-dev/prperf-action@v1
   with:
     prepare_run: bin/rails db:prepare db:seed   # once, before measuring
-    run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
+    run: ruby bench/request.rb
 ```
 
 A failure here fails the step. Use a fixed seed or input so each run starts from

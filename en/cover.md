@@ -12,9 +12,8 @@ The next chapter, "What prperf is," gives the overview.
 
 ### Setup
 
-1. Install the GitHub App.
-2. Provide a benchmark. Here we'll measure boot time with `bin/rails runner ""`.
-3. Add a workflow that runs it, triggered on both `push` (the default branch) and `pull_request`.
+1. Provide a benchmark. Here we'll measure boot time with `bin/rails runner ""`.
+2. Add a workflow that runs it, triggered on both `push` (the default branch) and `pull_request`. (A public repository needs nothing installed; a private repository also installs the GitHub App.)
 
 ```yaml
 # .github/workflows/prperf.yml
@@ -26,14 +25,14 @@ on:
 jobs:
   bench:
     runs-on: ubuntu-latest
-    permissions: { contents: read, id-token: write }
+    permissions: { contents: read, id-token: write, checks: write, pull-requests: write }
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""   # ← your measurement command (step 2)
+          run: bin/rails runner ""   # ← your measurement command (the action wraps it in rperf)
 ```
 
 Options like threshold alerts, multiple benchmarks (`benchmark`), comment control (`comment`), and run count (`count`, default 3, median) are available too (see "Setup").

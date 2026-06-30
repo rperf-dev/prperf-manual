@@ -25,6 +25,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      checks: write          # write the Check Run (public repos)
+      pull-requests: write   # write the sticky comment (public repos)
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -33,7 +35,7 @@ jobs:
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: boot
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
 ```
 
 The single workflow's push records the base, so that alone gives you **boot
@@ -103,6 +105,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      checks: write          # write the Check Run (public repos)
+      pull-requests: write   # write the sticky comment (public repos)
     services:
       postgres:                      # drop services and db:prepare if you don't use a DB
         image: postgres:16
@@ -126,11 +130,11 @@ jobs:
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: boot
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: request
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/request.rb
+          run: ruby bench/request.rb
 ```
 
 The single workflow records the base on push to the default branch.

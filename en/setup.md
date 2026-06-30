@@ -3,25 +3,38 @@
 Getting prperf running takes about 10–15 minutes. For an overview of the
 service, see "What prperf is."
 
-There are three things to do:
+There are two things to do:
 
-1. Install the GitHub App
-2. Provide a benchmark
-3. Add a workflow that runs it (triggered on both PRs and pushes to the default branch)
+1. Provide a benchmark
+2. Add a workflow that runs it (triggered on both PRs and pushes to the default branch)
+
+For a **public** repository there is nothing to install — the action itself
+writes the Check Run and the sticky PR comment with the workflow's
+`GITHUB_TOKEN`. **Private** repositories install the prperf GitHub App as well
+(see below).
 
 ## Prerequisites
 
-- **rperf 0.10 or newer** in your Gemfile. prperf uses the `meta` / `summary`
-  embedded in the profile; with an older rperf the action stops with a clear
-  error.
+- **rperf 0.10 or newer** in your Gemfile (Bundler projects). prperf uses the
+  `meta` / `summary` embedded in the profile; with an older rperf the action
+  stops with a clear error. The compatibility contract is the profile's
+  **format_version**, not the rperf gem version: any rperf whose profile format
+  the server understands is accepted, and a too-new format is rejected with a
+  clear message rather than silently misread.
 - A **benchmark command** to measure (see below).
 - A **public repository**. Private repositories require a paid plan (currently
   public-only during the free beta).
 
-## Install the GitHub App
+## Install the GitHub App (private repositories only)
 
-Install the prperf GitHub App on your repository from its App page. This lets
-prperf write the Check Run and PR comments for that repository.
+**Public repositories need no install.** The action writes the Check Run and the
+sticky comment directly using the workflow's `GITHUB_TOKEN`, so just add the
+workflow below and you're done.
+
+**Private repositories** install the prperf GitHub App on the repository from its
+App page (a paid plan). With the App installed, prperf writes the branded Check
+Run server-side. During the free beta only public repositories are supported;
+private support arrives with paid plans.
 
 ## Provide a benchmark
 
@@ -32,8 +45,8 @@ per-project examples are in "Writing a benchmark."
 
 For this guide we measure one concrete example: a Rails app's boot. The
 benchmark is just `bin/rails runner ""` — it boots the app and runs an empty
-script, so there's no benchmark file to write. The next section wraps it in
-rperf and puts it in the workflow.
+script, so there's no benchmark file to write. The next section puts it in the
+workflow; the action wraps it in rperf for you.
 
 ## Add the workflow
 
@@ -58,8 +71,10 @@ jobs:
   bench:
     runs-on: ubuntu-latest
     permissions:
-      contents: read         # for checkout
-      id-token: write        # required for OIDC upload
+      contents: read         # checkout
+      id-token: write        # OIDC upload (no secrets)
+      checks: write          # write the Check Run (public repos)
+      pull-requests: write   # write the sticky comment (public repos)
     steps:
       - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
@@ -67,17 +82,24 @@ jobs:
           bundler-cache: true
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
 ```
 
-In `run:`, wrap the command you want to measure in `rperf record`; it must write
-at least one profile. Point its output at the action-provided `$PRPERF_DIR` with
-`--snapshot-dir "$PRPERF_DIR"`.
+In `run:`, write just the command you want to measure — the action wraps it in
+`rperf record` for you. (If you'd rather control the recording yourself, set
+`record: false` and write the full `rperf record … -- <cmd>` command in `run:`.)
+For a Bundler project the action runs `bundle exec rperf` so the CLI matches the
+version in your Gemfile; for a project without a Gemfile the action installs
+rperf itself.
 
 You **must** include `permissions: id-token: write`. Without it there is no
 OIDC token and the upload cannot happen. `contents: read` lets
-`actions/checkout` fetch the repository; once you set `permissions:`, anything
-you don't list defaults to none, so both are spelled out.
+`actions/checkout` fetch the repository. On a **public** repository `checks:
+write` and `pull-requests: write` let the action write the Check Run and the
+sticky comment with the workflow token; they are harmless on private
+repositories, where the App writes the Check Run server-side. Once you set
+`permissions:`, anything you don't list defaults to none, so they are all spelled
+out.
 
 ## Thresholds and comments (optional)
 
@@ -97,7 +119,7 @@ benchmark** if needed.
 jobs:
   bench:
     runs-on: ubuntu-latest
-    permissions: { contents: read, id-token: write }
+    permissions: { contents: read, id-token: write, checks: write, pull-requests: write }
     env:
       PRPERF_DEFAULT_THRESHOLDS: |     # applies to every benchmark
         alloc: "+10%"
@@ -108,7 +130,7 @@ jobs:
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+          run: bin/rails runner ""
 ```
 
 Threshold keys, with a recommended starting value for each (prperf has no
@@ -145,7 +167,8 @@ notifications stay at one.
 
 | Input | Default | Description |
 |---|---|---|
-| `run` | (required) | Measurement command; must emit at least one `.json.gz` |
+| `run` | (required) | Measurement command; the action wraps it in `rperf record` |
+| `record` | `true` | Set `false` to write the full `rperf record … -- <cmd>` command in `run:` yourself |
 | `prepare_run` | `""` | One-time setup before measuring (generate fixtures, seed, etc.); not measured |
 | `count` | `3` | Number of runs; the server compares the median |
 | `benchmark` | `default` | Benchmark series name; one commit can carry several, compared independently |
@@ -164,11 +187,11 @@ its own base and shows them all in **one Check Run**.
 - uses: rperf-dev/prperf-action@v1
   with:
     benchmark: boot
-    run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- bin/rails runner ""
+    run: bin/rails runner ""
 - uses: rperf-dev/prperf-action@v1
   with:
     benchmark: render
-    run: bundle exec rperf record --snapshot-dir "$PRPERF_DIR" -- ruby bench/render.rb
+    run: ruby bench/render.rb
 ```
 
 Use the **same benchmark names** on the PR and push-to-default-branch triggers
