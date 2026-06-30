@@ -15,15 +15,15 @@ writes the Check Run and the sticky PR comment with the workflow's
 
 ## Prerequisites
 
-- **rperf 0.10 or newer** in your Gemfile (Bundler projects). prperf uses the
+- **rperf 0.11 or newer** in your Gemfile (Bundler projects). prperf uses the
   `meta` / `summary` embedded in the profile; with an older rperf the action
   stops with a clear error. The compatibility contract is the profile's
   **format_version**, not the rperf gem version: any rperf whose profile format
   the server understands is accepted, and a too-new format is rejected with a
   clear message rather than silently misread.
 - A **benchmark command** to measure (see below).
-- A **public repository**. Private repositories require a paid plan (currently
-  public-only during the free beta).
+- A **repository** (public or private). Private repositories install the prperf
+  App (free during the beta).
 
 ## Install the GitHub App (private repositories only)
 
@@ -32,9 +32,9 @@ sticky comment directly using the workflow's `GITHUB_TOKEN`, so just add the
 workflow below and you're done.
 
 **Private repositories** install the prperf GitHub App on the repository from its
-App page (a paid plan). With the App installed, prperf writes the branded Check
-Run server-side. During the free beta only public repositories are supported;
-private support arrives with paid plans.
+App page. With the App installed, prperf writes the branded Check Run
+server-side. This is free during the beta for private repos; paid plans (longer
+retention, higher limits) come later.
 
 ## Provide a benchmark
 
@@ -213,5 +213,6 @@ so each series has a baseline.
 - Upload problems (plan limits, rate limits, server errors) are **warnings
   only**; the step still succeeds. Only the measurement command itself failing
   fails the step.
-- During the free beta, **public repositories only**. Private repositories are
-  coming with paid plans.
+- During the free beta, **both public and private repositories work** (private
+  repositories install the prperf App). Results are kept for 15 days; paid plans
+  (longer retention) come later.

@@ -90,8 +90,9 @@ It also suits teams whose private apps care about performance — Rails apps whe
 speed drives UX or revenue. You catch a heavy change in the same place you review
 it, before it reaches production.
 
-Pricing: public repositories are free, private repositories are on a paid plan
-(currently public-only during the free beta).
+Pricing: free during the beta for both public and private repositories (private
+repositories install the prperf App). Paid plans (longer retention and higher
+limits) come later.
 
 ## How to read this manual
 

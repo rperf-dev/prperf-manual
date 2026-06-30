@@ -41,7 +41,7 @@ jobs:
 The single workflow's push records the base, so that alone gives you **boot
 alloc/GC compared on every PR**.
 
-> Make sure rperf 0.10 or newer is in your Gemfile.
+> Make sure rperf 0.11 or newer is in your Gemfile.
 
 ## Measure one request (the full version)
 

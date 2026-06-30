@@ -41,7 +41,7 @@ jobs:
 
 この 1 本で、既定ブランチ(main または master)への push が記録した boot の base と、PR の head が比較されます。
 
-> rperf 0.10 以上を Gemfile に入れておいてください。
+> rperf 0.11 以上を Gemfile に入れておいてください。
 
 ## 1 リクエストを測る(本格版)
 

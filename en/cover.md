@@ -43,4 +43,4 @@ On each PR, the result shows up right in the PR's Checks (a summary compared aga
 
 Every PR and push also records a measurement, so you can browse the history over time at [prperf.atdot.net](https://prperf.atdot.net).
 
-prperf never blocks CI and needs no secrets. PRs from forks can't be measured, and during the free beta only public repositories are supported.
+prperf never blocks CI and needs no secrets. PRs from forks can't be measured, but during the free beta both public and private repositories are supported for free; private repositories install the prperf App.

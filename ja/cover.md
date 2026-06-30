@@ -18,7 +18,7 @@ PR を作ると、Check Run に次のような数字が出ます。
 2. それを実行するワークフローを追加します。`push`（既定ブランチ）と `pull_request` の両方をトリガにします。
 
 public リポジトリはこれだけで動きます。
-private リポジトリは加えて prperf の GitHub App をインストールします（有料プラン）。
+private リポジトリは加えて prperf の GitHub App をインストールします。
 
 ```yaml
 # .github/workflows/prperf.yml
@@ -51,4 +51,5 @@ jobs:
 PR と push のたびに結果が記録され、[prperf.atdot.net](https://prperf.atdot.net) でこれまでの履歴（推移）を確認できます。
 
 prperf は CI を落とさず、シークレットも要りません。
-ただし fork からの PR は計測できず、無料βの間は public リポジトリだけが対象です。
+ただし fork からの PR は計測できません。
+無料βの間は public も private も無料で使え、private は prperf の GitHub App をインストールして使います。

@@ -13,7 +13,7 @@ run: ruby bench/main.rb
 ```
 
 `run:` には計測したいコマンドだけを書き、Action が `rperf record` で自動的に包みます。
-rperf は Gemfile に入れておきます（0.10 以上。Action が `bundle exec rperf` で呼ぶためです）。
+rperf は Gemfile に入れておきます（0.11 以上。Action が `bundle exec rperf` で呼ぶためです）。
 action はこれを `count` 回（既定 3）まわし、サーバーが中央値を base と比較します。
 あなたが書くのは `bench/main.rb` の中身、つまり代表的な処理を一定量こなすスクリプトです。
 
