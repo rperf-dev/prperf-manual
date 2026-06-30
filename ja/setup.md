@@ -82,7 +82,7 @@ jobs:
 ```
 
 `run:` には、プロファイルしたいコマンドだけを書きます。
-Action がそれを `rperf record` で自動的に包み、プロファイルを書き出します。
+Action がそれを rperf の下で計測し、プロファイルを書き出します。
 自分で rperf コマンドを書きたいときは、入力 `record: false` を付けて `run:` に直接 `rperf record ...` を書きます。
 
 `permissions` は四つ書きます。
@@ -150,8 +150,8 @@ jobs:
 
 | 入力 | 既定 | 説明 |
 |---|---|---|
-| `run` | (必須) | プロファイルしたいコマンド。Action が `rperf record` で自動的に包む |
-| `record` | `true` | `run` を `rperf record` で包む。`false` で自分の rperf コマンドを `run` に直接書く |
+| `run` | (必須) | プロファイルしたいコマンド。Action が rperf の下で計測する（コマンドは書き換えない） |
+| `record` | `true` | `run` を rperf の下で計測する。`false` で自分の rperf コマンドを `run` に直接書く |
 | `prepare_run` | `""` | 計測前に1回だけ走るセットアップ（fixture 生成や seed など）。計測には含めない |
 | `count` | `3` | 計測回数。サーバーは中央値で比較 |
 | `benchmark` | `default` | ベンチ系列名。1 コミットで複数ベンチを独立比較できる |

@@ -46,7 +46,7 @@ per-project examples are in "Writing a benchmark."
 For this guide we measure one concrete example: a Rails app's boot. The
 benchmark is just `bin/rails runner ""` — it boots the app and runs an empty
 script, so there's no benchmark file to write. The next section puts it in the
-workflow; the action wraps it in rperf for you.
+workflow; the action measures it under rperf for you.
 
 ## Add the workflow
 
@@ -85,8 +85,8 @@ jobs:
           run: bin/rails runner ""
 ```
 
-In `run:`, write just the command you want to measure — the action wraps it in
-`rperf record` for you. (If you'd rather control the recording yourself, set
+In `run:`, write just the command you want to measure — the action measures it
+under rperf for you, unchanged. (If you'd rather control the recording yourself, set
 `record: false` and write the full `rperf record … -- <cmd>` command in `run:`.)
 For a Bundler project the action runs `bundle exec rperf` so the CLI matches the
 version in your Gemfile; for a project without a Gemfile the action installs
@@ -167,7 +167,7 @@ notifications stay at one.
 
 | Input | Default | Description |
 |---|---|---|
-| `run` | (required) | Measurement command; the action wraps it in `rperf record` |
+| `run` | (required) | Measurement command; the action measures it under rperf, unchanged |
 | `record` | `true` | Set `false` to write the full `rperf record … -- <cmd>` command in `run:` yourself |
 | `prepare_run` | `""` | One-time setup before measuring (generate fixtures, seed, etc.); not measured |
 | `count` | `3` | Number of runs; the server compares the median |

@@ -32,7 +32,7 @@ jobs:
         with: { bundler-cache: true }
       - uses: rperf-dev/prperf-action@v1
         with:
-          run: bin/rails runner ""   # ← your measurement command (the action wraps it in rperf)
+          run: bin/rails runner ""   # your measurement command (measured under rperf)
 ```
 
 Options like threshold alerts, multiple benchmarks (`benchmark`), comment control (`comment`), and run count (`count`, default 3, median) are available too (see "Setup").

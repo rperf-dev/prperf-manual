@@ -7,7 +7,7 @@ the part that takes the most effort.
 ## What a benchmark is
 
 To prperf, a benchmark is the command you pass to `run:`. Usually it's a small
-Ruby script (for example `bench/main.rb`); the action wraps it in `rperf record`
+Ruby script (for example `bench/main.rb`); the action measures it under rperf
 for you:
 
 ```yaml
