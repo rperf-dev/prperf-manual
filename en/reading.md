@@ -23,7 +23,9 @@ prepended.
 - **base / head metric table** — alloc, GC (minor/major), GC time, total ms,
   CPU ms, max RSS. Rows over threshold are **bold**.
 - **Top 10 method diff rows** — `base self% → head self% → Δpt`, so you can see
-  which methods grew in share.
+  which methods grew in share. `self%` is the share of samples in which that
+  method itself was running (excluding what it called), and `Δpt` is the
+  difference in percentage points from base to head.
 - **A diff link to the viewer** — the way into the flamegraph.
 - When there is no base, it shows "No base snapshot found — showing this run's
   numbers only."

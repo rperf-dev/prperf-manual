@@ -152,6 +152,8 @@ jobs:
 |---|---|---|
 | `run` | (必須) | プロファイルしたいコマンド。Action が rperf の下で計測する（コマンドは書き換えない） |
 | `record` | `true` | `run` を rperf の下で計測する。`false` で自分の rperf コマンドを `run` に直接書く |
+| `rperf_version` | `""` | Gemfile が無いときにインストールする rperf の版（空なら最新）。Gemfile がある場合や `record: false` では無視される |
+| `token` | `${{ github.token }}` | 公開リポジトリで Check Run と sticky コメントを書くトークン。非公開リポジトリはインストールした App が書く |
 | `prepare_run` | `""` | 計測前に1回だけ走るセットアップ（fixture 生成や seed など）。計測には含めない |
 | `count` | `3` | 計測回数。サーバーは中央値で比較 |
 | `benchmark` | `default` | ベンチ系列名。1 コミットで複数ベンチを独立比較できる |

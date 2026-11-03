@@ -17,6 +17,7 @@ on:
 jobs:
   bench:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write   # required: prperf uploads authenticate via the OIDC token
@@ -26,8 +27,8 @@ jobs:
         with:
           ruby-version: "3.4"   # rperf requires Ruby >= 3.4.0
       - name: Install ligarb + rperf
-        run: gem install ligarb rperf
+        run: gem install ligarb 'rperf:~> 0.11.1'
       - uses: rperf-dev/prperf-action@v1
         with:
           benchmark: book
-          run: rperf record --snapshot-dir "$PRPERF_DIR" -- ligarb build
+          run: ligarb build   # bare command: the action records it under rperf

@@ -169,6 +169,8 @@ notifications stay at one.
 |---|---|---|
 | `run` | (required) | Measurement command; the action measures it under rperf, unchanged |
 | `record` | `true` | Set `false` to write the full `rperf record … -- <cmd>` command in `run:` yourself |
+| `rperf_version` | `""` | rperf version to install when there is no Gemfile (empty = latest); ignored with a Gemfile or `record: false` |
+| `token` | `${{ github.token }}` | Token that writes the Check Run and sticky comment on public repos; private repos are written by the installed App |
 | `prepare_run` | `""` | One-time setup before measuring (generate fixtures, seed, etc.); not measured |
 | `count` | `3` | Number of runs; the server compares the median |
 | `benchmark` | `default` | Benchmark series name; one commit can carry several, compared independently |
